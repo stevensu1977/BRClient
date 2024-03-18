@@ -40,6 +40,9 @@ import StopIcon from "../icons/pause.svg";
 import RobotIcon from "../icons/robot.svg";
 import CloudIcon from "../icons/cloud-success.svg";
 
+import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/dialog";
+
 import {
   ChatMessage,
   SubmitKey,
@@ -407,6 +410,30 @@ export function DocumentsList(props: {
     }
   };
 
+  async function openTauriDialog() {
+    const filePath = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "SupportFile",
+          extensions: ["pdf", "docx", "xlsx", "md", "txt", "csv"],
+        },
+      ],
+    });
+    console.log(filePath);
+    const fileName = (filePath as string)?.substring(
+      (filePath as string)?.lastIndexOf("/") + 1,
+    );
+
+    invoke("tauri_file_extract_command", { invoke_message: filePath }).then(
+      (message) => {
+        console.log(message);
+        setFiles([{ file: fileName, size: 0 }]);
+        props.onDocumentSelect((message as string) ?? "");
+      },
+    );
+  }
+
   return (
     <div>
       {props.showDocumentsList === true && (
@@ -415,9 +442,11 @@ export function DocumentsList(props: {
             icon={<CloudIcon />}
             text={"Load PDF/Word/Excel/TXT/CSV/MD File"}
             bordered
-            onClick={() => {
-              console.log("upload"), localLoadDocument();
-            }}
+            // onClick={() => {
+            //   console.log("upload"), localLoadDocument();
+            // }}
+            //如果是Tauri版本使用openTauriDialog
+            onClick={openTauriDialog}
           />
           <hr />
         </>
